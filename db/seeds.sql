@@ -13,8 +13,8 @@ INSERT INTO role (id, title, salary, department_id)
         (1, 'Junior Sales Rep', 58000, 1),
         (2, 'Senior Sales Rep', 60000, 1),
         (3, 'Public Relations Secretary', 48000, 2),
-        (4, 'Chief Relations Officer', 560000, 2),
-        (5, 'Primary Attorney', 280000, 3),
+        (4, 'Chief Relations Officer', 260000, 2),
+        (5, 'Primary Attorney', 118000, 3),
         (6, 'Pen Tester', 54000, 5),
         (7, 'Security Network Officer', 81000, 5),
         (8, 'Lead Engineer', 120000, 6),
@@ -23,10 +23,10 @@ INSERT INTO role (id, title, salary, department_id)
 
 INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
     VALUES
-        (1, 'Nancy', 'Powers', 1, 7),
-        (2, 'Matthew', 'Winters', 6, 7),
         (3, 'Allen', 'Wattson', 7, null),
         (4, 'Mercury', 'Washington', 4, null),
         (5, 'Ian', 'Masters', 8, null),
         (6, 'Janet', 'Weiss', 10, null),
-        (7, 'Vince', 'McIntyre', 2, null);
+        (7, 'Vince', 'McIntyre', 2, 6),
+        (1, 'Nancy', 'Powers', 1, 6),
+        (2, 'Matthew', 'Winters', 6, 3);
