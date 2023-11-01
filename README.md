@@ -33,10 +33,23 @@ WHEN I choose to update an employee role
 THEN I am prompted to select an employee to update and their new role and this information is updated in the database 
 ```
 
+## Bonus Criteria
+
+The following are additional functionality that could be(and was) added on top of the minimum requirements: 
+
+* View employees by manager.
+
+* View employees by department.
+
+* Delete departments, roles, and employees.
+
+* View the total utilized budget of a department&mdash;in other words, the combined salaries of all employees in that department.
+
 ## Mock-Up
 
 The following is a link to a video showcasing the app in action:
-[YouTube Link to video showcasing the command-line employee management application](https://youtu.be/1tmETEDVG_Q)
+
+https://youtu.be/1tmETEDVG_Q
 
 ## Installation
 
