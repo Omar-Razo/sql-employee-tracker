@@ -123,7 +123,7 @@ const viewMenu = () => {
                     });
                     break
                 case 'View All Roles':
-                    db.query('SELECT * FROM role', (err, results) => {
+                    db.query('SELECT role.id, role.title, role.salary, department.dept_name FROM role LEFT JOIN department ON role.department_id = department.id;', (err, results) => {
                         if (err) {
                             console.log('ERROR: ', err)
                         } else {
@@ -134,7 +134,7 @@ const viewMenu = () => {
                     break
                 case 'View All Employees':
                     //self join so that table shows manager name rather than just manager id
-                    db.query('SELECT a.id, a.first_name, a.last_name, a.role_id, b.first_name AS manager_first_name, b.last_name AS manager_last_name FROM employee a LEFT JOIN employee b on a.manager_id = b.id;', (err, results) => {
+                    db.query('SELECT a.id, a.first_name, a.last_name, role.title, department.dept_name, b.first_name AS manager_first_name, b.last_name AS manager_last_name FROM employee a LEFT JOIN employee b on a.manager_id = b.id LEFT JOIN role ON a.role_id = role.id LEFT JOIN department ON role.department_id = department.id;', (err, results) => {
                         if (err) {
                             console.log('ERROR: ', err)
                         } else {
@@ -144,16 +144,89 @@ const viewMenu = () => {
                     });
                     break
                 case 'View Employee by Manager':
-                    // query managers EXTRA
-                    // db.query('')
+                    db.query('SELECT DISTINCT b.manager_id, a.first_name, a.last_name FROM employee a INNER JOIN employee b ON a.id = b.manager_id', (err, results) => {
+                        if (err) {
+                            console.log('ERROR: ', err)
+                        } else {
+                            const mngList = results
+                            inquirer.prompt([
+                                {
+                                    type: 'list',
+                                    message: 'Select a manager: ',
+                                    name: 'selectedMng',
+                                    choices: results.map((result) => `${result.first_name} ${result.last_name}`)
+                                }
+                            ])
+                            .then((answer) => {
+                                const splitName = answer.selectedMng.split(' ')
+                                const newMngData = mngList.find((el) => el.first_name === splitName[0] && el.last_name === splitName[1])
+                                db.query('SELECT first_name, last_name, role.title FROM employee LEFT JOIN role ON role_id = role.id WHERE manager_id = (?)', [newMngData.manager_id], (err, results) => {
+                                    if (err) {
+                                        console.log('ERROR: ', err)
+                                    } else {
+                                        console.table(results)
+                                        viewMenu()
+                                    }
+                                })
+                            }).catch((err) => console.error(err))
+                        }
+                    })
                     break
                 case 'View Employee by Department':
-                    // EXTRA
-                    //db.query('')
+                    db.query('SELECT * FROM department', (err, results) => {
+                        if (err) {
+                            console.log('ERROR: ', err)
+                        } else {
+                            const deptList = results
+                            inquirer.prompt([
+                                {
+                                    type: 'list',
+                                    message: 'Select a department: ',
+                                    name: 'selectedDept',
+                                    choices: results.map((result) => result.dept_name)
+                                }
+                            ])
+                            .then((answer) => {
+                                const deptId = deptList.find((el) => el.dept_name === answer.selectedDept)
+                                db.query('SELECT first_name, last_name, role.title FROM employee LEFT JOIN role ON role_id = role.id WHERE department_id = (?)', [deptId.id], (err, results) => {
+                                    if (err) {
+                                        console.log('ERROR: ', err)
+                                    } else {
+                                        console.table(results)
+                                        viewMenu()
+                                    }
+                                })
+                            }).catch((err) => console.error(err))
+                        }
+                    })
                     break
                 case 'View Department Budget Utilization':
-                    // EXTRA
-                    //db.query('')
+                    db.query('SELECT * FROM department', (err, results) => {
+                        if (err) {
+                            console.log('ERROR: ', err)
+                        } else {
+                            const deptList = results
+                            inquirer.prompt([
+                                {
+                                    type: 'list',
+                                    message: 'Select a department: ',
+                                    name: 'selectedDept',
+                                    choices: results.map((result) => result.dept_name)
+                                }
+                            ])
+                            .then((answer) => {
+                                const deptId = deptList.find((el) => el.dept_name === answer.selectedDept)
+                                db.query('SELECT SUM(salary) AS total_department_budget FROM role WHERE department_id = (?)', [deptId.id], (err, results) => {
+                                    if (err) {
+                                        console.log('ERROR: ', err)
+                                    } else {
+                                        console.table(results)
+                                        viewMenu()
+                                    }
+                                })
+                            }).catch((err) => console.error(err))
+                        }
+                    })
                     break
                 case 'Return to main menu':
                     mainMenu();
@@ -191,7 +264,7 @@ const addMenu = () => {
                         if (err) {
                             console.log('ERROR: ', err)
                         } else {
-                            const depts = results
+                            const deptList = results
                             inquirer.prompt([
                                 {
                                 type: 'input',
@@ -211,7 +284,7 @@ const addMenu = () => {
                                 }
                             ])
                             .then((answer) => {
-                                const deptId = depts.find((el) => el.dept_name === answer.roleDept)
+                                const deptId = deptList.find((el) => el.dept_name === answer.roleDept)
                                 db.query(`INSERT INTO role (title, salary, department_id)
                                     VALUES (?, ?, ?)`, [answer.newRole, answer.newSalary, deptId.id], (err, results) => {
                                         if (err) {
@@ -226,9 +299,121 @@ const addMenu = () => {
                     })
                     break
                 case 'Add Employee':
-                    // Prompt: first, last, 
+                    db.query('SELECT title, id from role', (err, results) => {
+                        if (err) {
+                            console.log('ERROR: ', err)
+                        } else {
+                            const roleList = results
+                            inquirer.prompt([
+                                {
+                                    type: 'input',
+                                    message: 'First name of new employee: ',
+                                    name: 'newFirstName'
+                                },
+                                {
+                                    type: 'input',
+                                    message: 'Last name of new employee: ',
+                                    name: 'newLastName'
+                                },
+                                {
+                                    type: 'list',
+                                    message: 'New employee\'s role: ',
+                                    name: 'newRole',
+                                    choices: results.map((result) => result.title)
+                                }
+                            ])
+                            .then((answer) => {
+                                const newEmpRole = roleList.find((el) => el.title === answer.newRole)
+                                const newEmpFirst = answer.newFirstName
+                                const newEmpLast = answer.newLastName
+                                db.query('SELECT DISTINCT b.manager_id, a.first_name, a.last_name FROM employee a INNER JOIN employee b ON a.id = b.manager_id', (err, results) => {
+                                    if (err) {
+                                        console.log('ERROR: ', err)
+                                    } else {
+                                        const newEmpMng = results
+                                        inquirer.prompt([
+                                            {
+                                                type: 'list',
+                                                message: 'Select a manager(if applicable): ',
+                                                name: 'newEmpMng',
+                                                choices: [
+                                                    'None',
+                                                    ...results.map((result) => `${result.first_name} ${result.last_name}`)
+                                                ]
+                                            }
+                                        ])
+                                        .then((answer) => {
+                                            let defaultMng = null;
+                                            const splitName = answer.newEmpMng.split(' ')
+                                            const newMngData = newEmpMng.find((el) => el.first_name === splitName[0] && el.last_name === splitName[1])
+                                            if (newMngData) {
+                                                defaultMng = newMngData.manager_id;
+                                            }
+                                            db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                                                VALUES (?, ?, ?, ?)`, [newEmpFirst, newEmpLast, newEmpRole.id, defaultMng], (err, results) => {
+                                                if (err) {
+                                                    console.log('ERROR: ', err)
+                                                } else {
+                                                    console.log('Employee added!')
+                                                    addMenu();
+                                                }
+                                            })
+                                        }).catch((err) => console.error(err))
+                                    }
+                                });
+                            }).catch((err) => console.error(err))
+                        }
+                    })
                     break
                 case 'Update Employee\'s Role': 
+                    db.query('SELECT first_name, last_name, id FROM employee', (err, results) => {
+                        if (err) {
+                            console.log('ERROR: ', err)
+                        } else {
+                            const empList = results
+                            inquirer.prompt([
+                                {
+                                    type: 'list',
+                                    message: 'Which employee\'s role would you like to update?',
+                                    name: 'empToUpdate',
+                                    choices: results.map((result) => `${result.first_name} ${result.last_name}`)
+                                }
+                            ])
+                            .then((answer) => {
+                                const splitName = answer.empToUpdate.split(' ');
+                                const empToUpdate = empList.find((el) => el.first_name === splitName[0] && el.last_name === splitName[1])
+                                db.query('SELECT title, id FROM role', (err, results) => {
+                                    if (err) {
+                                        console.log('ERROR: ', err)
+                                    } else {
+                                        const roleList = results
+                                        inquirer.prompt([
+                                            {
+                                                type: 'list',
+                                                name: 'roleUpdate',
+                                                message: 'Employee\'s new role: ',
+                                                choices: results.map((result) => result.title)
+                                            }
+                                        ])
+                                        .then((answer) => {
+                                            const roleId = roleList.find((el) => el.title === answer.roleUpdate)
+                                            db.query('UPDATE employee SET role_id = (?) WHERE id = (?)', [roleId.id, empToUpdate.id], (err, results) => {
+                                                if (err) {
+                                                    console.log('ERROR: ', err)
+                                                } else {
+                                                    console.log('Employee role updated!')
+                                                    addMenu();
+                                                }
+                                            })
+
+                                        })
+                                        .catch((err) => console.error(err))
+                                    }
+                                })
+                            })
+                            .catch((err) => console.error(err))
+                        }
+                    })
                     break
                 case 'Return to main menu':
                     mainMenu();
